@@ -1,9 +1,181 @@
+# ============================================================================
+# Cargo.toml - Project Configuration and Dependencies
+# ============================================================================
+# This file configures the Rust project called "fruitdata".
+# It specifies:
+# 1. Project metadata (name, version, edition)
+# 2. External dependencies (libraries we use from crates.io)
+# 3. Build settings and other configuration
+#
+# Key concept: Cargo is Rust's package manager. Think of it like npm (Node.js),
+# pip (Python), or gem (Ruby). It manages dependencies and builds your project.
+#
+# When you run `cargo build`, Cargo reads this file, downloads dependencies,
+# and compiles everything together into a working binary.
+# ============================================================================
+
+# ============================================================================
+# [package] Section - Project Metadata
+# ============================================================================
+# This section defines information about our project itself.
+
 [package]
+# The name of the project/binary. This is:
+# - The name printed in help messages
+# - The name of the compiled binary (target/release/fruitdata)
+# - The name used when publishing to crates.io (not done here)
 name = "fruitdata"
+
+# The version number following semantic versioning (MAJOR.MINOR.PATCH)
+# - MAJOR: Breaking changes
+# - MINOR: New features, backwards compatible
+# - PATCH: Bug fixes
+# Example: "0.1.0" means "first release, not stable yet"
 version = "0.1.0"
-edition = "2024"
+
+# The Rust edition to use. This controls which Rust language features are available.
+# Editions are released every few years and allow breaking changes:
+# - "2015": Original Rust (before editions existed)
+# - "2018": Many ergonomic improvements (async/await, NLL, etc.)
+# - "2021": Latest edition; most modern features and best practices
+# We use "2021" to get the most modern Rust experience.
+# WARNING: The original Cargo.toml had "2024" which doesn't exist!
+# This causes compilation errors; we should use "2021".
+edition = "2021"
+
+# ============================================================================
+# [dependencies] Section - External Libraries
+# ============================================================================
+# This section lists all external crates (libraries) our project uses.
+# Each dependency specifies:
+# - The crate name (how to refer to it in code via `use`)
+# - The version constraint
+# - Optional features to enable
+#
+# When you run `cargo build`, Cargo downloads these dependencies and their
+# transitive dependencies (dependencies of dependencies) from crates.io.
+#
+# Versions follow semantic versioning:
+# - "1.0.219" means exactly version 1.0.219
+# - "1.0" means any 1.x version (latest compatible patch)
+# - "=1.0.219" means exactly 1.0.219 (explicitly pinned)
+# - "^1.0.219" means 1.x but not 2.x (semver compatible)
 
 [dependencies]
+
+# ============================================================================
+# serde - Serialization and Deserialization Framework
+# ============================================================================
+# What is it?
+# Serde is the most popular serialization library in Rust. It allows automatic
+# conversion between Rust structs and various formats (JSON, YAML, TOML, etc.)
+#
+# Why we use it:
+# In fruitdata, we use serde to convert our FruitDimensions struct to/from JSON.
+# Without serde, we'd manually parse JSON strings and construct structs (tedious!).
+#
+# How it works:
+# 1. Add #[derive(Serialize, Deserialize)] to a struct
+# 2. Serde generates code that can convert the struct to JSON and vice versa
+# 3. We use serde_json (below) to actually work with JSON
+#
+# Features:
+# The "derive" feature enables the #[derive(...)] macros we use in models.rs.
+# This is essential for our use case.
+#
+# Real-world example:
+# ```
+# #[derive(Serialize, Deserialize)]
+# struct Apple { name: String, volume: f32 }
+#
+# let apple = Apple { name: "Gala".into(), volume: 15.0 };
+# let json_string = serde_json::to_string(&apple)?;
+# // json_string is now: {"name":"Gala","volume":15.0}
+# ```
 serde = { version = "1.0.219", features = ["derive"] }
+
+# ============================================================================
+# serde_json - JSON Support for Serde
+# ============================================================================
+# What is it?
+# serde_json implements JSON serialization/deserialization for serde.
+# It allows us to work with JSON files and strings in a type-safe way.
+#
+# Why we use it:
+# In catalog.rs:
+# - We use serde_json::from_str() to parse JSON files into FruitDimensions structs
+# - We use serde_json::to_string_pretty() to format structs as pretty-printed JSON
+#
+# How it works:
+# 1. serde_json provides functions like from_str, to_string, to_string_pretty
+# 2. These functions use Serialize/Deserialize traits from serde
+# 3. Together, they enable automatic JSON ↔ Rust struct conversion
+#
+# Real-world example:
+# ```
+# let json = r#"[{"name":"Apple","length":4.0}]"#;
+# let fruits: Vec<FruitDimensions> = serde_json::from_str(json)?;
+# ```
 serde_json = "1.0.140"
+
+# ============================================================================
+# clap - Command-Line Argument Parser
+# ============================================================================
+# What is it?
+# Clap (Command Line Argument Parser) automatically parses command-line arguments
+# and generates help messages, error messages, and validation.
+#
+# Why we use it:
+# In main.rs, we could manually parse std::env::args() and validate arguments,
+# but that's error-prone and tedious. Clap handles this automatically.
+#
+# How it works:
+# 1. Define a struct (Cli) with fields representing command-line arguments
+# 2. Add #[derive(Parser)] to enable automatic parsing
+# 3. Add attributes like #[arg(...)] and #[command(...)] to customize behavior
+# 4. Call Cli::parse() to parse std::env::args() into a Cli struct
+# 5. If parsing fails or the user requests help, clap handles it automatically
+#
+# Features:
+# The "derive" feature enables the #[derive(Parser, Subcommand)] macros.
+# These macros are essential for our declarative CLI design.
+#
+# Real-world example:
+# ```
+# #[derive(Parser)]
+# struct Cli {
+#     #[arg(short, long)]
+#     file: String,
+#     #[command(subcommand)]
+#     command: Commands,
+# }
+#
+# let cli = Cli::parse();  // Automatically parses std::env::args()
+# ```
+#
+# When the user runs:
+# - `fruitdata list` → parsed into: Cli { file: "fruits.json", command: List }
+# - `fruitdata -f custom.json get Apple` → parsed into: Cli { file: "custom.json", command: Get { name: "Apple" } }
+# - `fruitdata --help` → clap automatically prints generated help and exits
 clap = { version = "4.3.7", features = ["derive"] }
+
+# ============================================================================
+# Dependency Summary
+# ============================================================================
+# In total, fruitdata depends on:
+# 1. serde + serde_json = JSON serialization/deserialization
+# 2. clap = Command-line argument parsing
+#
+# These are the "big three" for building Rust CLI tools.
+# Together, they handle:
+# - Parsing CLI arguments
+# - Validating user input
+# - Converting between Rust structs and JSON
+# - Reading/writing files
+#
+# Alternative dependencies (not used here, but good to know):
+# - anyhow: Better error handling
+# - thiserror: Custom error types
+# - structopt: Older CLI parsing (clap v3 replaced this)
+# - ron: Alternative to JSON (Rust Object Notation)
+# - toml: TOML file parsing

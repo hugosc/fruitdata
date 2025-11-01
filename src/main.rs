@@ -6,8 +6,8 @@
 // binary small makes the library reusable by other crates (path/git/crates.io).
 // ============================================================================
 
-use crate::{initialise_fruit_catalogue, load_catalogue, save_catalogue, FruitDimensions};
 use clap::{Parser, Subcommand};
+use fruitdata::{initialise_fruit_catalogue, load_catalogue, save_catalogue, FruitDimensions};
 use std::error::Error;
 use std::path::PathBuf;
 

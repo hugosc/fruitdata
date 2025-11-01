@@ -15,14 +15,10 @@
 // - String matching: Case-insensitive fruit name lookups
 // ============================================================================
 
-// Import modules defined in this crate
-mod catalog;
-mod models;
-
-// Import specific items from modules for convenience (saves typing catalog::, models::, etc.)
-use catalog::{initialise_fruit_catalogue, load_catalogue, save_catalogue};
+// Use the crate's library API so this binary becomes a thin wrapper.
+// This allows other projects to depend on `fruitdata` as a library.
+use fruitdata::{initialise_fruit_catalogue, load_catalogue, save_catalogue, FruitDimensions};
 use clap::{Parser, Subcommand};
-use models::FruitDimensions;
 use std::error::Error;
 use std::path::PathBuf;
 
@@ -348,25 +344,4 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // Remove all fruits matching the name (case-insensitive)
             // `.retain()` keeps only the fruits for which the closure returns true.
-            // Here, we keep only fruits that DON'T match the name.
-            // This effectively removes matching fruits.
-            fruits.retain(|f| !f.name.eq_ignore_ascii_case(name_trimmed));
-
-            // Check if we actually removed anything
-            if fruits.len() < before {
-                // At least one fruit was removed
-
-                // Persist the changes to the JSON file
-                save_catalogue(&fruits, &file_path)?;
-
-                println!("Removed '{}'.", name_trimmed);
-            } else {
-                // No fruit matched; nothing was removed
-                println!("Fruit '{}' not found.", name_trimmed);
-            }
-        }
-    }
-
-    // All commands completed successfully
-    Ok(())
-}
+            // Here
